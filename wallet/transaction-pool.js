@@ -1,4 +1,5 @@
 const Transaction = require("./transaction");
+const TRANSACTION_THRESHOLD = require("../config")
 /**
  *  All unprocessed transactions in the network will go inside a transaction pool until resolved
  */
@@ -12,6 +13,12 @@ class TransactionPool {
    */
   addTransactionToPool(transaction) {
     this.transactions.push(transaction);
+    if (this.transactions.length >= TRANSACTION_THRESHOLD){
+      return true;
+    }
+    else{
+      return false;
+    }
   }
   /**
    * Checks if a transaction is already in the transaction pool

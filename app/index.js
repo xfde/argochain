@@ -16,7 +16,7 @@ const blockchain = new Blockchain();
 // Create a new wallet and pass the current date as a secrete *IND
 const wallet = new Wallet(Date.now().toString());
 const transactionPool = new TransactionPool();
-const p2pserver = new P2pServer(blockchain, transactionPool);
+const p2pserver = new P2pServer(blockchain, transactionPool,wallet);
 p2pserver.listen(); // starts the p2pserver
 //EXPOSED APIs
 

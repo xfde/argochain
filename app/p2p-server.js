@@ -8,12 +8,14 @@ const peers = process.env.PEERS ? process.env.PEERS.split(",") : [];
 const MESSAGE_TYPE = {
   chain: "CHAIN",
   transaction: "TRANSACTION",
+  block: "BLOCK",
 };
 class P2pserver {
-  constructor(blockchain, transactionPool) {
+  constructor(blockchain, transactionPool, wallet) {
     this.blockchain = blockchain;
     this.sockets = [];
     this.transactionPool = transactionPool;
+    this.wallet = wallet;
   }
 
   // create a new p2p server and connections
@@ -59,6 +61,28 @@ class P2pserver {
     });
   }
   /**
+   * Broadcast a new block on the network
+   * @param {the newly created block to be broadcasted} block
+   */
+  broadcastBlock(block) {
+    this.sockets.forEach((socket) => {
+      this.sendBlock(socket, block);
+    });
+  }
+  /**
+   * Helper function for sending a block to a socket
+   * @param {the socket to send the block} socket
+   * @param {blok to be sent} block
+   */
+  sendBlock(socket, block) {
+    socket.send(
+      JSON.stringify({
+        type: MESSAGE_TYPE.block,
+        block: block,
+      })
+    );
+  }
+  /**
    * helper function to send the chain instance
    */
   sendChain(socket) {
@@ -99,16 +123,39 @@ class P2pserver {
     socket.on("message", (message) => {
       const data = JSON.parse(message);
       console.log("Received from peers: ", data);
-      switch(data.type){
+      switch (data.type) {
         case MESSAGE_TYPE.chain:
-            this.blockchain.replaceChain(data.chain);
-            break;
+          this.blockchain.replaceChain(data.chain);
+          break;
         case MESSAGE_TYPE.transaction:
-            if(!this.transactionPool.transactionExists(data.transaction)){
-                this.transactionPool.addTransactionToPool(data.transaction);
-                this.broadcastTransaction(data.transaction);
+          if (!this.transactionPool.transactionExists(data.transaction)) {
+            // check if pool is filled
+            let thresholdReached = this.transactionPool.addTransaction(
+              data.transaction
+            );
+            // let oter nodes know about this transaction
+            this.broadcastTransaction(data.transaction);
+            if (thresholdReached) {
+              if (
+                this.blockchain.getCurrentValidator() ==
+                this.wallet.getPublcKey()
+              ) {
+                // this node should validate the transaction
+                console.log("Creating block");
+                let block = this.blockchain.addBlock(
+                  this.transactionPool.transactions,
+                  this.wallet
+                );
+                this.broadcastBlock(block);
+              }
             }
-            break;
+          }
+          break;
+        case MESSAGE_TYPE.block:
+          if (this.blockchain.isValidBlock(data.blok)) {
+            this.broadcastBlock(data.block);
+          }
+          break;
       }
     });
   }

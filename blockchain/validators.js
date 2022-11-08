@@ -1,5 +1,7 @@
 class Validators {
     constructor() {
+      // list of addressed of nodes that have paid the validator fee
+      // and are eligible to be elected
       this.list = [];
     }
   
