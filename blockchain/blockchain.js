@@ -1,5 +1,6 @@
 const Block = require("./block");
 const Account = require("./account");
+const logger = require("../logger");
 
 class Blockchain {
   constructor() {
@@ -38,7 +39,7 @@ class Blockchain {
       Block.verifyBlock(block) &&
       Block.verifyValidator(block, this.getValidator())
     ) {
-      console.log("block valid");
+      logger.debug("block valid");
       //this.addBlock(block, wallet);
       //BROKEN
       return true;
@@ -83,14 +84,14 @@ class Blockchain {
    */
   replaceChain(newChain) {
     if (newChain.length <= this.chain.length) {
-      console.log("Recieved chain is not longer than the current chain");
+      logger.warn("Recieved chain is not longer than the current chain");
       return false;
     } else if (!this.isValidChain(newChain)) {
-      console.log("Recieved chain is invalid");
+      logger.warn("Recieved chain is invalid");
       return false;
     }
 
-    console.log("Replacing the current chain with new chain");
+    logger.debug("Replacing the current chain with new chain");
     this.chain = newChain;
     return true;
   }

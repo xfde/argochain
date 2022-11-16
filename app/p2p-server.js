@@ -1,5 +1,5 @@
 const WebSocket = require("ws");
-
+const logger = require("../logger");
 //declare the peer to peer server port
 const P2P_PORT = process.env.P2P_PORT || 5001;
 
@@ -24,29 +24,37 @@ class P2pserver {
     // create the p2p server with port as argument
     const server = new WebSocket.Server({ port: P2P_PORT });
 
-    // event listener and a callback function for any new connection
+    // register callback for new connections to this node
     // on any new connection the current instance will send the current chain
     // to the newly connected peer
-    server.on("connection", (socket) => this.connectSocket(socket));
+    server.on("connection", (socket) => {
+      // register the connected socket as active
+      socket.isAlive = true;
+      this.connectSocket(socket);
+    });
 
     // to connect to the peers that we have specified
     this.connectToPeers();
 
-    console.log(`Listening for peer to peer connection on port : ${P2P_PORT}`);
+    logger.debug(`Listening for peer to peer connection on port : ${P2P_PORT}`);
   }
 
-  // after making connection to a socket
+  // after a socket connects to this node
   connectSocket(socket) {
     // push the socket to the socket array
     this.sockets.push(socket);
-    console.log("Socket connected");
 
     // register a message event listener to the socket
     this.messageHandler(socket);
+    this.closeConnectionHandler(socket);
     this.sendChain(socket);
-    // on new connection send the blockchain chain to the peer
-    // TODO DON'T SEND THE ENTIRE BLOCKCHAIN
-    socket.send(JSON.stringify(this.blockchain));
+  }
+  /**
+   *
+   * @param {socket to be disconnected} socket
+   */
+  closeConnectionHandler(socket) {
+    socket.on("close", () => (socket.isAlive = false));
   }
 
   connectToPeers() {
@@ -56,7 +64,6 @@ class P2pserver {
       const socket = new WebSocket(peer);
 
       // open event listner is emitted when a connection is established
-      // saving the    socket in the array
       socket.on("open", () => this.connectSocket(socket));
     });
   }
@@ -122,7 +129,7 @@ class P2pserver {
     //on recieving a message execute a callback function
     socket.on("message", (message) => {
       const data = JSON.parse(message);
-      console.log("Received from peers: ", data);
+      logger.debug("Received from peers: ", data);
       switch (data.type) {
         case MESSAGE_TYPE.chain:
           this.blockchain.replaceChain(data.chain);
@@ -141,7 +148,7 @@ class P2pserver {
                 this.wallet.getPublcKey()
               ) {
                 // this node should validate the transaction
-                console.log("Creating block");
+                logger.debug("Creating block");
                 let block = this.blockchain.addBlock(
                   this.transactionPool.transactions,
                   this.wallet

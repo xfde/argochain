@@ -1,5 +1,6 @@
 const ChainUtil = require("../chain-util");
 const { INITIAL_BALANCE } = require("../config");
+const logger = require("../logger");
 const Transaction = require("./transaction");
 class Wallet {
   constructor(secret) {
@@ -27,7 +28,7 @@ class Wallet {
   createTransaction(to, amount, type, blockchain, transactionPool) {
     this.balance = this.getBalance(blockchain);
     if (amount > this.balance) {
-      console.log(
+      logger.warn(
         `Amount: ${amount} exceeds the current balance: ${this.balance}`
       );
       return;

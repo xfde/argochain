@@ -1,5 +1,6 @@
 const Transaction = require("./transaction");
-const TRANSACTION_THRESHOLD = require("../config")
+const TRANSACTION_THRESHOLD = require("../config");
+const logger = require("../logger");
 /**
  *  All unprocessed transactions in the network will go inside a transaction pool until resolved
  */
@@ -36,7 +37,7 @@ class TransactionPool {
   validTransactions() {
     return this.transactions.filter((transaction) => {
       if (!Transaction.verifyTransaction(transaction)) {
-        console.log(`Invalid signature from ${transaction.data.from}`);
+        logger.warn(`Invalid signature from ${transaction.data.from}`);
         return;
       }
 

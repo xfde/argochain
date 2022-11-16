@@ -1,24 +1,26 @@
 {
   "name": "argochain",
   "version": "1.0.0",
-  "description": "",
+  "description": "A PoS Blockchain implementation",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./app"
+    "dev": "cross-env NODE_ENV=development nodemon ./app",
+    "production": "cross-env NODE_ENV=production nodemon ./app"
   },
   "keywords": [],
-  "author": "",
+  "author": "Alexandru Constantin",
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^2.0.20"
   },
   "dependencies": {
     "body-parser": "^1.20.1",
+    "cross-env": "^7.0.3",
     "crypto-js": "^4.1.1",
     "elliptic": "^6.5.4",
     "express": "^4.18.2",
     "uuid": "^9.0.0",
+    "winston": "^3.8.2",
     "ws": "^8.9.0"
   }
 }
