@@ -1,34 +1,60 @@
 const Block = require("./block");
 const Account = require("./account");
 const logger = require("../logger");
+const Wallet = require("../wallet/wallet");
+const Stake = require("./stake");
+const Validators = require("./validators");
+
+const TRANSACTION_TYPE = {
+  transaction: "TRANSACTION",
+  stake: "STAKE",
+  validator_fee: "VALIDATOR_FEE",
+};
 
 class Blockchain {
   constructor() {
     this.chain = [Block.genesis()];
+    this.stakes = new Stake();
     this.accounts = new Account();
+    this.validators = new Validators();
   }
   /**
    * Adds a new block to the chian
    * @param {data to be written in the new block} data
    * @returns the newly created block
    */
-  addBlock(data, wallet) {
+  addBlock(data) {
     const block = Block.createBlock(
       this.chain[this.chain.length - 1],
       data,
-      wallet
+      new Wallet(process.env.SECRET)
     );
     this.chain.push(block);
-
+    logger.info("New block " + block.hash + " created");
     return block;
   }
   /**
-   * Checks a block for being valid. Reasons for block to be invalid: 
+   * Creates a new block on the chain (from transactions)
+   * @param {transaction} transactions
+   * @param {validator} wallet
+   * @returns
+   */
+  createBlock(transactions, wallet) {
+    const block = Block.createBlock(
+      this.chain[this.chain.length - 1],
+      transactions,
+      wallet
+    );
+    logger.info("New block " + block.hash + " created by " + wallet.publicKey);
+    return block;
+  }
+  /**
+   * Checks a block for being valid. Reasons for block to be invalid:
    * invalid hash
    * invalid lastHash
    * invalid validator
    * invalid signature
-   * @param {block to be checked} block 
+   * @param {block to be checked} block
    * @returns True if valid, False otherwise
    */
   isValidBlock(block) {
@@ -40,8 +66,8 @@ class Blockchain {
       Block.verifyValidator(block, this.getValidator())
     ) {
       logger.debug("block valid");
-      //this.addBlock(block, wallet);
-      //BROKEN
+      this.addBlock(block);
+      this.executeTransactions(block);
       return true;
     } else {
       return false;
@@ -71,7 +97,7 @@ class Blockchain {
   }
   /**
    * Get the balance of the account
-   * @param {Public key of the wallet to retrieve the balance} publicKey
+   * @param {Public key of the wallet to retrieve the balance for} publicKey
    * @returns the balance of the account that has the provided public key
    */
   getBalance(publicKey) {
@@ -90,10 +116,57 @@ class Blockchain {
       logger.warn("Recieved chain is invalid");
       return false;
     }
-
     logger.debug("Replacing the current chain with new chain");
+    this.resetState();
+    this.executeChain(newChain);
     this.chain = newChain;
     return true;
+  }
+  /**
+   * Handler for adding new blocks or rebuild the blockchain locally
+   * @param {block to be executed} block
+   */
+  executeTransactions(block) {
+    block.data.forEach((transaction) => {
+      switch (transaction.type) {
+        case TRANSACTION_TYPE.transaction:
+          this.accounts.update(transaction);
+          this.accounts.transferFee(block, transaction);
+          break;
+        case TRANSACTION_TYPE.stake:
+          this.stakes.update(transaction);
+          this.accounts.decrement(
+            transaction.input.from,
+            transaction.output.amount
+          );
+          this.accounts.transferFee(block, transaction);
+
+          break;
+        case TRANSACTION_TYPE.validator_fee:
+          logger.info("VALIDATOR_FEE received from: " + transaction.input.from);
+          if (this.validators.update(transaction)) {
+            this.accounts.decrement(
+              transaction.input.from,
+              transaction.output.amount
+            );
+            this.accounts.transferFee(block, transaction);
+          }
+          break;
+      }
+    });
+  }
+
+  executeChain(chain) {
+    chain.forEach((block) => {
+      this.executeTransactions(block);
+    });
+  }
+
+  resetState() {
+    this.chain = [Block.genesis()];
+    this.stakes = new Stake();
+    this.accounts = new Account();
+    this.validators = new Validators();
   }
 }
 

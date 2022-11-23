@@ -32,10 +32,13 @@ class Block {
    * @param {The wallet of the signer} wallet
    * @returns A newly created block based on last hash
    */
-  static createBlock(lastBlock, data, wallet) {
+  static createBlock(lastBlock, _data, wallet) {
     let hash;
     let timestamp = Date.now();
     const lastHash = lastBlock.hash;
+    // make data array so you can store more info in a block
+    let data = [];
+    data.push(_data);
     hash = Block.hash(timestamp, lastHash, data);
 
     let validator = wallet.getPublicKey();
@@ -43,6 +46,15 @@ class Block {
     //Sign the block
     let signature = Block.signBlockHash(hash, wallet);
     return new this(timestamp, lastHash, hash, data, validator, signature);
+  }
+  /**
+   *
+   * @param {hash of the block} hash
+   * @param {wallet to sign the block} wallet
+   * @returns
+   */
+  static signBlockHash(hash, wallet) {
+    return wallet.sign(hash);
   }
   /**
    * Utility function for hashing
@@ -56,8 +68,8 @@ class Block {
   }
   /**
    * Verfies the signature of a block
-   * @param {Block object} block 
-   * @returns 
+   * @param {Block object} block
+   * @returns
    */
   static verifyBlock(block) {
     return ChainUtil.verifySignature(
@@ -68,8 +80,8 @@ class Block {
   }
   /**
    * Verify the validator of a block
-   * @param {block object} block 
-   * @param {Validator} validator 
+   * @param {block object} block
+   * @param {Validator} validator
    * @returns true if block validator is the same as the given validator, false otherwise
    */
   static verifyValidator(block, validator) {

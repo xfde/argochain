@@ -1,13 +1,12 @@
 {
   "name": "argochain",
-  "version": "1.0.0",
-  "description": "A PoS Blockchain implementation",
+  "version": "1.0",
+  "description": "A PoS Blockchain implementation using VRF lottery system",
   "main": "index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon ./app",
     "production": "cross-env NODE_ENV=production nodemon ./app"
   },
-  "keywords": [],
   "author": "Alexandru Constantin",
   "license": "ISC",
   "devDependencies": {

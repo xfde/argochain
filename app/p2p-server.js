@@ -9,6 +9,7 @@ const MESSAGE_TYPE = {
   chain: "CHAIN",
   transaction: "TRANSACTION",
   block: "BLOCK",
+  clear_transactions: "CLEAR_TRANSACTIONS",
 };
 class P2pserver {
   constructor(blockchain, transactionPool, wallet) {
@@ -43,7 +44,6 @@ class P2pserver {
   connectSocket(socket) {
     // push the socket to the socket array
     this.sockets.push(socket);
-
     // register a message event listener to the socket
     this.messageHandler(socket);
     this.closeConnectionHandler(socket);
@@ -58,15 +58,13 @@ class P2pserver {
   }
 
   connectToPeers() {
-    //connect to each peer
     peers.forEach((peer) => {
-      // create a socket for each peer
       const socket = new WebSocket(peer);
-
       // open event listner is emitted when a connection is established
       socket.on("open", () => this.connectSocket(socket));
     });
   }
+
   /**
    * Broadcast a new block on the network
    * @param {the newly created block to be broadcasted} block
@@ -129,38 +127,43 @@ class P2pserver {
     //on recieving a message execute a callback function
     socket.on("message", (message) => {
       const data = JSON.parse(message);
-      logger.debug("Received from peers: ", data);
+      logger.debug("Received from peers: ", data.type);
       switch (data.type) {
         case MESSAGE_TYPE.chain:
           this.blockchain.replaceChain(data.chain);
           break;
         case MESSAGE_TYPE.transaction:
           if (!this.transactionPool.transactionExists(data.transaction)) {
-            // check if pool is filled
-            let thresholdReached = this.transactionPool.addTransaction(
-              data.transaction
-            );
-            // let oter nodes know about this transaction
+            this.transactionPool.addTransaction(data.transaction);
             this.broadcastTransaction(data.transaction);
-            if (thresholdReached) {
-              if (
-                this.blockchain.getCurrentValidator() ==
+          }
+          if (this.transactionPool.thresholdReached()) {
+            logger.debug(
+              "Transaction Pool Filled. Selected Validator is: " +
+                this.blockchain.getCurrentValidator() +
+                " and my address is: " +
                 this.wallet.getPublcKey()
-              ) {
-                // this node should validate the transaction
-                logger.debug("Creating block");
-                let block = this.blockchain.addBlock(
-                  this.transactionPool.transactions,
-                  this.wallet
-                );
-                this.broadcastBlock(block);
-              }
+            );
+            if (
+              this.blockchain.getCurrentValidator() == this.wallet.getPublcKey()
+            ) {
+              // this node should validate the transaction
+              logger.debug("Creating block");
+              let block = this.blockchain.addBlock(
+                this.transactionPool.transactions,
+                this.wallet
+              );
+              this.broadcastBlock(block);
             }
           }
           break;
         case MESSAGE_TYPE.block:
           if (this.blockchain.isValidBlock(data.blok)) {
+            // First validate the block with te VRF the add the block
+            // this.blockchain.addBlock(data.block);
+            // this.blockchain.executeTransactions(data.block);
             this.broadcastBlock(data.block);
+            this.transactionPool.clear();
           }
           break;
       }
