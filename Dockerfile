@@ -8,4 +8,5 @@ RUN npm install
 # RUN npm ci --only=production
 COPY . .
 EXPOSE 8080
+ENV NODE_ENV = "development"
 CMD [ "node", "./app" ]

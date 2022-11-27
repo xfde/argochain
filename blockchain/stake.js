@@ -1,3 +1,4 @@
+const { Evaluate, ProofHoHash } = require('@idena/vrf-js');
 class Stake {
   constructor() {
     this.addresses = [];

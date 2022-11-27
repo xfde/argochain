@@ -1,10 +1,8 @@
 const WebSocket = require("ws");
 const logger = require("../logger");
 //declare the peer to peer server port
-const P2P_PORT = process.env.P2P_PORT || 5001;
+const P2P_PORT = process.env.P2P_PORT;
 
-//list of address to connect to
-const peers = process.env.PEERS ? process.env.PEERS.split(",") : [];
 const MESSAGE_TYPE = {
   chain: "CHAIN",
   transaction: "TRANSACTION",
@@ -58,6 +56,8 @@ class P2pserver {
   }
 
   connectToPeers() {
+    //list of address to connect to
+    const peers = this.getInitialPeers();
     peers.forEach((peer) => {
       const socket = new WebSocket(peer);
       // open event listner is emitted when a connection is established
@@ -65,6 +65,9 @@ class P2pserver {
     });
   }
 
+  getInitialPeers(){
+    return (process.env.PEERS) ? process.env.PEERS.split(",") : [];
+  }
   /**
    * Broadcast a new block on the network
    * @param {the newly created block to be broadcasted} block

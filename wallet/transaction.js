@@ -1,5 +1,6 @@
 const { TRANSACTION_FEE } = require("../config");
 const ChainUtil = require("../chain-util");
+const logger = require("../logger");
 /**
  * Each action in the blockchain is represented by a transaction between two wallets
  * NewTransaction (check for ammount) -> Generate Transaction (populate with data) -> Sign Transaction (hash sign)

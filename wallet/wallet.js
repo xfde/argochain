@@ -1,10 +1,9 @@
 const ChainUtil = require("../chain-util");
-const { INITIAL_BALANCE } = require("../config");
 const logger = require("../logger");
 const Transaction = require("./transaction");
 class Wallet {
   constructor(secret) {
-    this.balance = INITIAL_BALANCE;
+    this.balance = 0;
     this.keyPair = ChainUtil.genKeyPair(secret);
     this.publicKey = this.keyPair.getPublic("hex");
   }
@@ -34,7 +33,9 @@ class Wallet {
       return;
     }
     let transaction = Transaction.newTransaction(this, to, amount, type);
-    transactionPool.addTransactionToPool(transaction);
+    if (transaction !== null) {
+      transactionPool.addTransactionToPool(transaction);
+    }
     return transaction;
   }
   /**

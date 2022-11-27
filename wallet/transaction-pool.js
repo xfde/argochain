@@ -55,6 +55,10 @@ class TransactionPool {
   clear() {
     this.transactions = [];
   }
+  toString() {
+    logger.debug("Transaction pool length: " + this.transactions.length);
+    return this.transactions.toString();
+  }
 }
 
 module.exports = TransactionPool;

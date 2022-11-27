@@ -1,0 +1,186 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Node API",
+    "description": "A web interface for interacting with a blockchain node through the API",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "host": "localhost:3001",
+  "basePath": "/api",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/blocks": {
+      "get": {
+        "tags": ["Blocks"],
+        "summary": "Get all blocks in the current chain",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Blocks"
+            }
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get all transactions in the current pool",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Transactions"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create a new transaction",
+        "parameters": [
+          {
+            "name": "Transaction",
+            "in": "body",
+            "description": "Transaction to be created",
+            "schema": {
+              "properties": {
+                "to": {
+                  "type": "string"
+                },
+                "amount": { "type": "number", "minimum": 0 },
+                "type": {
+                  "type": "string",
+                  "enum": ["TRANSACTION", "STAKE", "VALIDATOR_FEE"]
+                }
+              }
+            }
+          }
+        ],
+        "consumes": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Transaction Created",
+            "schema": {
+              "$ref": "#/definitions/Transaction"
+            }
+          }
+        }
+      }
+    },
+    "/wallet": {
+      "get": {
+        "tags": ["Wallet"],
+        "summary": "Get info abot current wallet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Wallet"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Wallet": {
+      "required": ["publicKey", "balance"],
+      "properties": {
+        "publicKey": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "string"
+        }
+      }
+    },
+    "Block": {
+      "required": [
+        "timestamp",
+        "lastHash",
+        "hash",
+        "data",
+        "validator",
+        "signature"
+      ],
+      "properties": {
+        "timestamp": {
+          "type": "string"
+        },
+        "lastHash": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validator": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        }
+      }
+    },
+    "Blocks": {
+      "type": "array",
+      "$ref": "#/definitions/Block"
+    },
+    "Transaction": {
+      "required": ["id", "type", "input", "output"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "input": {
+          "type": "object",
+          "properties": {
+            "timestamp": {
+              "type": "string"
+            },
+            "from": {
+              "type": "string"
+            },
+            "signature": {
+              "type": "string"
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "to": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "string"
+            },
+            "fee": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "Transactions": {
+      "type": "array",
+      "$ref": "#/definitions/Transaction"
+    }
+  }
+}
