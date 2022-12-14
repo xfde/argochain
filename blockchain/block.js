@@ -37,15 +37,13 @@ class Block {
     let timestamp = Date.now();
     const lastHash = lastBlock.hash;
     // make data array so you can store more info in a block
-    let data = [];
-    data.push(_data);
-    hash = Block.hash(timestamp, lastHash, data);
+    hash = Block.hash(timestamp, lastHash, _data);
 
     let validator = wallet.getPublicKey();
 
     //Sign the block
     let signature = Block.signBlockHash(hash, wallet);
-    return new this(timestamp, lastHash, hash, data, validator, signature);
+    return new this(timestamp, lastHash, hash, _data, validator, signature);
   }
   /**
    *

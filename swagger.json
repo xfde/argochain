@@ -29,6 +29,44 @@
         }
       }
     },
+    "/dev/appointValidator": {
+      "post": {
+        "tags": ["DEV"],
+        "summary": "Temporary dev method to appoint a validator.\n DO NOT USE IN PRODUCTION",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/dev/appointValidator" }
+          }
+        },
+        "consumes": ["application/json"]
+      }
+    },
+    "/dev/addBalance": {
+      "post": {
+        "tags": ["DEV"],
+        "summary": "Temporary dev method to add balance to a wallet on the blockchain.\n DO NOT USE IN PRODUCTION",
+        "parameters": [
+          {
+            "name": "Amount",
+            "in": "body",
+            "description": "Amount to be credited on the blockchain in the current wallet",
+            "schema": {
+              "properties": {
+                "amount": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/dev/addBalance" }
+          }
+        },
+        "consumes": ["application/json"]
+      }
+    },
     "/transactions": {
       "get": {
         "tags": ["Transactions"],
@@ -91,13 +129,33 @@
     }
   },
   "definitions": {
+    "dev/addBalance": {
+      "properties": {
+        "response": {
+          "type": "string"
+        }
+      }
+    },
+    "dev/appointValidator": {
+      "properties": {
+        "response": {
+          "type": "string"
+        }
+      }
+    },
     "Wallet": {
       "required": ["publicKey", "balance"],
       "properties": {
         "publicKey": {
           "type": "string"
         },
-        "balance": {
+        "localBalance": {
+          "type": "number"
+        },
+        "blockchainBalance": {
+          "type": "number"
+        },
+        "privateKey": {
           "type": "string"
         }
       }

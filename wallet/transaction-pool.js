@@ -8,6 +8,10 @@ class TransactionPool {
   constructor() {
     this.transactions = [];
   }
+
+  isEmpty() {
+    return this.transactions.length === 0;
+  }
   /**
    *
    * @param {Transaction object to be added to the waiting pool} transaction
@@ -26,6 +30,10 @@ class TransactionPool {
    * @returns True if transaction is in the pool, False otherwise
    */
   transactionExists(transaction) {
+    logger.debug(this.transactions.length);
+    if (this.transactions.length === 0) {
+      return false;
+    }
     let exists = this.transactions.find((t) => t.id === transaction.id);
     return exists;
   }

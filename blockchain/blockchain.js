@@ -4,6 +4,7 @@ const logger = require("../logger");
 const Wallet = require("../wallet/wallet");
 const Stake = require("./stake");
 const Validators = require("./validators");
+const Epoch = require("./epoch");
 
 const TRANSACTION_TYPE = {
   transaction: "TRANSACTION",
@@ -17,6 +18,13 @@ class Blockchain {
     this.stakes = new Stake();
     this.accounts = new Account();
     this.validators = new Validators();
+    this.epoch = new Epoch();
+  }
+  getCurrentEpoch() {
+    return this.epoch.getEpoch();
+  }
+  getHashOfLastBlock() {
+    return this.chain[this.chain.length - 1].lastHash;
   }
   /**
    * Adds a new block to the chian
@@ -45,7 +53,9 @@ class Blockchain {
       transactions,
       wallet
     );
-    logger.info("New block " + block.hash + " created by " + wallet.publicKey);
+    logger.info(
+      "New block " + block.hash + " created by " + wallet.getPublicKey("hex")
+    );
     return block;
   }
   /**
@@ -65,7 +75,7 @@ class Blockchain {
       Block.verifyBlock(block) &&
       Block.verifyValidator(block, this.getValidator())
     ) {
-      logger.debug("block valid");
+      logger.debug("Block" + block.hash.slice(-4) + " is valid");
       this.addBlock(block);
       this.executeTransactions(block);
       return true;
@@ -105,18 +115,32 @@ class Blockchain {
   }
   /**
    * Checks the validity of the received chain and replaces the existing chain with the new one if valid
-   * @param {The new chain object} newChain
+   * @param {Array containing the blocks} newChain
    * @returns True if chain was replace, Flase if chian was not replaced due to invalid issue
    */
   replaceChain(newChain) {
     if (newChain.length <= this.chain.length) {
-      logger.warn("Recieved chain is not longer than the current chain");
+      logger.warn(
+        "Received chain " +
+          newChain[newChain.length - 1].hash.slice(-5) +
+          " is not longer than the current chain " +
+          this.chain[this.chain.length - 1].hash.slice(-5)
+      );
       return false;
     } else if (!this.isValidChain(newChain)) {
-      logger.warn("Recieved chain is invalid");
+      logger.warn(
+        "Received chain " +
+          newChain[newChain.length - 1].hash.slice(-5) +
+          " is invalid"
+      );
       return false;
     }
-    logger.debug("Replacing the current chain with new chain");
+    logger.debug(
+      "Replacing the current chain " +
+        this.chain[this.chain.length - 1].hash.slice(-5) +
+        " with new chain " +
+        newChain[newChain.length - 1].hash.slice(-5)
+    );
     this.resetState();
     this.executeChain(newChain);
     this.chain = newChain;

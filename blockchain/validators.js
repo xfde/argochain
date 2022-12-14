@@ -6,7 +6,10 @@ class Validators {
     // and are eligible to be elected
     this.list = [];
   }
-
+  // DEV PURPOSES
+  appointValidator(wallet) {
+    this.list.push(wallet);
+  }
   update(transaction) {
     if (transaction.amount == 30 && transaction.to == "0") {
       this.list.push(transaction.input.from);
@@ -14,6 +17,12 @@ class Validators {
       return true;
     }
     return false;
+  }
+  isValidator(address) {
+    return this.list.includes(address);
+  }
+  getValidatorThreshold() {
+    return 1 / this.list.length;
   }
 }
 

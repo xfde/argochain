@@ -5,7 +5,8 @@ class Wallet {
   constructor(secret) {
     this.balance = 0;
     this.keyPair = ChainUtil.genKeyPair(secret);
-    this.publicKey = this.keyPair.getPublic("hex");
+    this.publicKey = this.keyPair.getPublic();
+    this.privateKey = this.keyPair.getPrivate();
   }
   /**
    * Sign using the wallets keyPair
@@ -13,7 +14,7 @@ class Wallet {
    * @returns A HEX signature
    */
   sign(dataHash) {
-    return this.keyPair.sign(dataHash).toHex();
+    return this.keyPair.sign(dataHash);
   }
   /**
    * Initialise a transaction from the current wallet
@@ -44,13 +45,19 @@ class Wallet {
    * @returns The balance of this wallet on the blockchain
    */
   getBalance(blockchain) {
-    return blockchain.getBalance(this.publicKey);
+    return blockchain.getBalance(this.getPublicKey("hex"));
+  }
+  getPublicBalance() {
+    return this.balance;
   }
   /**
    * @returns The public key of this wallet
    */
-  getPublicKey() {
-    return this.publicKey;
+  getPublicKey(arg) {
+    return this.keyPair.getPublic(arg);
+  }
+  getPrivateKey() {
+    return this.privateKey;
   }
   /**
    *
