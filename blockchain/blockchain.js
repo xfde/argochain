@@ -13,12 +13,12 @@ const TRANSACTION_TYPE = {
 };
 
 class Blockchain {
-  constructor() {
-    this.chain = [Block.genesis()];
-    this.stakes = new Stake();
-    this.accounts = new Account();
-    this.validators = new Validators();
-    this.epoch = new Epoch();
+  constructor(data) {
+    this.chain = data !== undefined ? data.chain : [Block.genesis()];
+    this.stakes = new Stake(data);
+    this.accounts = new Account(data);
+    this.validators = new Validators(data);
+    this.epoch = new Epoch(data);
   }
   getCurrentEpoch() {
     return this.epoch.getEpoch();

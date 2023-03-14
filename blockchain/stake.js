@@ -1,7 +1,7 @@
 class Stake {
-  constructor() {
-    this.addresses = [];
-    this.balance = {};
+  constructor(data) {
+    this.addresses = data != undefined ? data.stakeAddresses : [];
+    this.balance = data != undefined ? data.stakeBalance : {};
   }
   /**
    * Add the address in the list and initilise its balance with 0

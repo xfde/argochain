@@ -1,10 +1,10 @@
 const logger = require("../logger");
 
 class Validators {
-  constructor() {
+  constructor(data) {
     // list of addressed of nodes that have paid the validator fee
     // and are eligible to be elected
-    this.list = [];
+    this.list = data != undefined ? data.validators : [];
   }
   // DEV PURPOSES
   appointValidator(wallet) {

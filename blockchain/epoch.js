@@ -3,9 +3,9 @@ const EventEmitter = require("events");
 const logger = require("../logger");
 const { EPOCH_TIME_IN_MS } = require("../config");
 class Epoch extends EventEmitter {
-  constructor() {
+  constructor(data) {
     super();
-    this.epoch = 0;
+    this.epoch = data != undefined ? data.epoch : 0;
     this.lastEpochTime = 0;
     this.time = undefined;
     this.ts = NtpTimeSync.getInstance();

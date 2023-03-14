@@ -1,0 +1,1 @@
+{"chain":[{"timestamp":1678210908933,"lastHash":"---","hash":"genesis-hash","data":[]}],"epoch":10,"stakeAddresses":[],"stakeBalance":{},"addresses":[],"balance":{},"validators":[],"wallet":"0429d2f92c5f52e838d085dcd432ebf27123012088dc56d44d4b6e604c40d0b1121347644108730521fe8fa34a77f11ce50c74601c1c0049a8f28581f0630e4ceb","walletBalance":0}

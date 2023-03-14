@@ -1,5 +1,5 @@
-const EC = require("elliptic").ec;
-const ec = new EC("secp256k1");
+const EC = require("elliptic");
+const ec = new EC.ec("secp256k1");
 const { v4: uuidv4 } = require("uuid");
 const SHA256 = require("crypto-js/sha256");
 class ChainUtil {
@@ -14,6 +14,10 @@ class ChainUtil {
   }
   static verifySignature(publicKey, signature, dataHash) {
     return ec.keyFromPublic(publicKey).verify(dataHash, signature);
+  }
+  static getKeyPairFromObject(publicKey) {
+    let key = ec.keyFromPublic(publicKey, "hex");
+    return key;
   }
 }
 

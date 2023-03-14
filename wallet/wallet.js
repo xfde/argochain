@@ -2,9 +2,14 @@ const ChainUtil = require("../chain-util");
 const logger = require("../logger");
 const Transaction = require("./transaction");
 class Wallet {
-  constructor(secret) {
-    this.balance = 0;
-    this.keyPair = ChainUtil.genKeyPair(secret);
+  constructor(data) {
+    if (data.wallet !== undefined) {
+      this.balance = data.walletBalance;
+      this.keyPair = ChainUtil.getKeyPairFromObject(data.wallet);
+    } else {
+      this.balance = 0;
+      this.keyPair = ChainUtil.genKeyPair(data);
+    }
     this.publicKey = this.keyPair.getPublic();
     this.privateKey = this.keyPair.getPrivate();
   }
@@ -38,6 +43,15 @@ class Wallet {
       transactionPool.addTransactionToPool(transaction);
     }
     return transaction;
+  }
+  /**
+   * Use this function to save and serialise the key of the wallet
+   * @returns The piblic key indeftifier for the EC instance
+   */
+  getEC() {
+    let pubpoint = this.keyPair.getPublic();
+    let pub = pubpoint.encode("hex");
+    return pub;
   }
   /**
    *

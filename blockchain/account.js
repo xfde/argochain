@@ -1,7 +1,12 @@
 class Account {
-  constructor() {
-    this.addresses = [];
-    this.balance = {};
+  constructor(data) {
+    if (data) {
+      this.addresses = data.addresses;
+      this.balance = data.balance;
+    } else {
+      this.addresses = [];
+      this.balance = {};
+    }
   }
   /**
    * Initises an adress

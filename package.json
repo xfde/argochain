@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon ./app",
-    "production": "cross-env NODE_ENV=production nodemon ./app"
+    "production": "cross-env NODE_ENV=production node ./app"
   },
   "author": "Alexandru Constantin",
   "license": "ISC",
@@ -15,8 +15,10 @@
   "dependencies": {
     "@idena/vrf-js": "^1.0.1",
     "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "crypto-js": "^4.1.1",
+    "death": "^1.1.0",
     "elliptic": "^6.5.4",
     "express": "^4.18.2",
     "ntp-time-sync": "^0.3.0",

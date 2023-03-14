@@ -3,6 +3,7 @@ const { Evaluate, ProofHoHash } = require("@idena/vrf-js");
 const logger = require("../logger");
 const ChainUtil = require("../chain-util");
 const Transaction = require("../wallet/transaction");
+const fs = require("fs");
 //declare the peer to peer server port
 const P2P_PORT = process.env.P2P_PORT;
 
@@ -12,6 +13,7 @@ const MESSAGE_TYPE = {
   block: "BLOCK",
   clear_transactions: "CLEAR_TRANSACTIONS",
 };
+
 class P2pserver {
   constructor(blockchain, transactionPool, wallet) {
     this.blockchain = blockchain;
@@ -52,7 +54,25 @@ class P2pserver {
   closeConnectionHandler(socket) {
     socket.on("close", () => (socket.isAlive = false));
   }
-
+  /**
+   * Serialise the current state of the blockchain and write it to a local file.
+   * Used when the program is killed/exited
+   */
+  saveBlockchain() {
+    let jsonData = {
+      chain: this.blockchain.chain,
+      epoch: this.blockchain.epoch.epoch,
+      stakeAddresses: this.blockchain.stakes.addresses,
+      stakeBalance: this.blockchain.stakes.balance,
+      addresses: this.blockchain.accounts.addresses,
+      balance: this.blockchain.accounts.balance,
+      validators: this.blockchain.validators.list,
+      wallet: this.wallet.getEC(),
+      walletBalance: this.wallet.balance,
+    };
+    jsonData = JSON.stringify(jsonData);
+    fs.writeFileSync("blockchain.txt", jsonData, "utf8");
+  }
   connectToPeers() {
     //list of address to connect to
     const peers = this.getInitialPeers();
