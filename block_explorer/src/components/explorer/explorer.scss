@@ -11,7 +11,7 @@
 }
 .BlockColours.COMPLETED {
   background-color: #092f4a;
-  border-color: #3258a9;
+  border-color: #08ad90;
   border-width: 1px;
   border-style: solid;
   display: flex;
@@ -120,7 +120,7 @@
 }
 
 .modal-header {
-  align-items: baseline;
+  align-items: inherit;
   display: flex;
   justify-content: space-between;
 }
@@ -136,12 +136,13 @@
 
   svg {
     width: 16px;
+    fill: #08ad90;
   }
 }
 
 .modal-wrapper {
   align-items: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.2);
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -167,15 +168,16 @@
   }
 
   .modal-body {
-    max-width: 500px;
+    max-width: 850px;
     opacity: 0;
     transform: translateY(-100px);
     transition: 0.3s;
     width: 100%;
     z-index: 1;
-    background-color: #0e0e0e;
+    background-color: #092f4a;
     opacity: 0;
     color: #f8f8f8;
+    border: 3px #08ad90 solid;
   }
 }
 

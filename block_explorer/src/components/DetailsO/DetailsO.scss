@@ -1,0 +1,9 @@
+.scrollable {
+  height: 200px;
+  width: 800px;
+  overflow: scroll;
+  white-space: nowrap;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  text-align: left;
+}

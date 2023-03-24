@@ -11,7 +11,10 @@ export const api = createApi({
     getBlocks: build.query({
       query: () => "/blocks",
     }),
+    getAccounts: build.query({
+      query: () => "/accounts",
+    }),
   }),
 });
 
-export const { useGetBlocksQuery } = api;
+export const { useGetBlocksQuery, useGetAccountsQuery } = api;
