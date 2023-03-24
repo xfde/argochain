@@ -4,6 +4,13 @@ Welcome to argochain, a PoS blockchain based on ethereum model with a VRF lotter
 
 # How to run
 
+### RUNNING THE BLOCK EXPLORER
+
+To run the block explorer navigate into `./block_exporer` and run `yarn install` or `npm install`
+Then just run `yarn start` or `npm run start`
+
+### RUNNING THE NODES FOR THE BLOCKCHAIN
+
 ### With docker
 
 # WARNING : DOCKER IS NOT STABLE ON THE LATEST VERSION
@@ -60,11 +67,7 @@ set P2P_PORT=5002 && set HTTP_PORT=3002 &&set PEERS=ws://localhost:5001 && npm r
 ```
 
 ### Structure
-
-### RUNNING THE BLOCK EXPLORER
-
-To run the block explorer navigate into `./block_exporer` and run `yarn install` or `npm install`
-Then just run `yarn start` or `npm run start`
+...
 
 ### Blockchain
 
