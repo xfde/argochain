@@ -12,6 +12,7 @@ const MESSAGE_TYPE = {
   transaction: "TRANSACTION",
   block: "BLOCK",
   clear_transactions: "CLEAR_TRANSACTIONS",
+  validator: "ADD_VALIDATOR",
 };
 
 class P2pserver {
@@ -34,6 +35,7 @@ class P2pserver {
       this.connectSocket(socket);
     });
     this.epochHandler();
+    this.registerWallet(this.wallet.getPublicKey("hex"));
     // to connect to the peers that we have specified
     this.connectToPeers();
     logger.debug(`Listening for peer to peer connection on port : ${P2P_PORT}`);
@@ -68,7 +70,6 @@ class P2pserver {
       balance: this.blockchain.accounts.balance,
       validators: this.blockchain.validators.list,
       wallet: this.wallet.getEC(),
-      walletBalance: this.wallet.balance,
     };
     jsonData = JSON.stringify(jsonData);
     fs.writeFileSync("blockchain.txt", jsonData, "utf8");
@@ -120,6 +121,7 @@ class P2pserver {
         epoch: this.blockchain.getCurrentEpoch(),
         lastEpochTime: this.blockchain.epoch.lastEpochTime,
         time: this.blockchain.epoch.time,
+        wallet: this.wallet.getPublicKey("hex"),
       })
     );
   }
@@ -148,8 +150,27 @@ class P2pserver {
       })
     );
   }
+  broadcastValidator(key) {
+    this.sockets.forEach((socket) => {
+      socket.send(
+        JSON.stringify({
+          type: MESSAGE_TYPE.validator,
+          validator: key,
+        })
+      );
+    });
+  }
+  registerWallet(wallet) {
+    this.blockchain.accounts.initialize(wallet);
+  }
   epochHandler() {
     this.blockchain.epoch.on("newEpoch", (epoch) => {
+      logger.info(
+        "Epoch " +
+          epoch +
+          " ended, transactions in pool: " +
+          this.transactionPool.transactions.length
+      );
       // compute vrf proof
       if (
         !this.blockchain.validators.isValidator(this.wallet.getPublicKey("hex"))
@@ -159,10 +180,7 @@ class P2pserver {
       let data = ChainUtil.hash(
         `${this.blockchain.getHashOfLastBlock()}${epoch}`
       );
-      const [hash, proof] = Evaluate(
-        this.wallet.getPrivateKey().toArray(),
-        data
-      );
+      const [hash, proof] = Evaluate(this.wallet.getPrivateKey(), data);
       let hex = Buffer.from(hash).toString("hex");
       let curr_raffle = parseInt(hex, 16) / Math.pow(2, 256);
       if (curr_raffle < this.blockchain.validators.getValidatorThreshold()) {
@@ -172,16 +190,18 @@ class P2pserver {
           //TODO: verify transactions before adding them to block
           let validTransactions = [];
           this.transactionPool.transactions.forEach((t) => {
-            let tra = new Transaction();
-            if (tra.verifyTransaction(t)) {
+            if (Transaction.verifyTransaction(t)) {
               validTransactions.push(t);
             }
           });
-          let newBlock = this.blockchain.addBlock(validTransactions);
+          let newBlock = this.blockchain.addBlock(
+            validTransactions,
+            this.wallet
+          );
           this.broadcastBlock(newBlock, proof);
           this.transactionPool.clear();
         }
-        logger.debug(
+        logger.info(
           "Epoch " +
             epoch +
             " ended with " +
@@ -199,6 +219,7 @@ class P2pserver {
       switch (data.type) {
         case MESSAGE_TYPE.chain:
           this.blockchain.replaceChain(data.chain);
+          this.registerWallet(data.wallet);
           this.blockchain.epoch.syncEpoch(data);
           break;
         case MESSAGE_TYPE.transaction:
@@ -207,17 +228,23 @@ class P2pserver {
             this.broadcastTransaction(data.transaction);
           }
           break;
+        case MESSAGE_TYPE.validator:
+          if (!this.blockchain.validators.isValidator(data.validator)) {
+            this.broadcastValidator(data.validator);
+            this.blockchain.validators.appointValidator(data.validator);
+          }
+          break;
         case MESSAGE_TYPE.block:
           // validation code NEEDS MOVING
           try {
             let blockMetaData = ChainUtil.hash(
               `${this.blockchain.getHashOfLastBlock()}${this.blockchain.getCurrentEpoch()}`
             );
-            logger.debug(data.block.validator);
-            logger.debug(blockMetaData);
-            logger.debug(data.proof);
+            let publicKey = ChainUtil.getKeyPairFromObject(
+              data.block.validator
+            );
             const h = ProofHoHash(
-              data.block.validator,
+              publicKey.getPublic("array"),
               blockMetaData,
               data.proof
             );
@@ -225,11 +252,11 @@ class P2pserver {
             logger.debug("Invalid proof, rejecting block");
           }
           if (this.blockchain.isValidBlock(data.block)) {
-            // First validate the block with te VRF the add the block
+            // First validate the block with the VRF the add the block
             this.broadcastBlock(data.block);
             this.transactionPool.clear();
+            logger.debug("Verification complete, block accepted");
           }
-          logger.debug("Verification complete, block accepted");
           break;
       }
     });

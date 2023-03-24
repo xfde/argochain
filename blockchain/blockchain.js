@@ -1,7 +1,6 @@
 const Block = require("./block");
 const Account = require("./account");
 const logger = require("../logger");
-const Wallet = require("../wallet/wallet");
 const Stake = require("./stake");
 const Validators = require("./validators");
 const Epoch = require("./epoch");
@@ -20,72 +19,88 @@ class Blockchain {
     this.validators = new Validators(data);
     this.epoch = new Epoch(data);
   }
+  /**
+   *
+   * @returns Current Epoch
+   */
   getCurrentEpoch() {
     return this.epoch.getEpoch();
   }
+  /**
+   *
+   * @returns Returns all acounts public keys and their associated balances on the blockchain
+   */
+  getAccountsData() {
+    let obj = [];
+    this.accounts.addresses.forEach((address, idx) => {
+      obj.push({
+        address: address,
+        balance: this.accounts.balance[address],
+        validator: this.validators.isValidator(address),
+        stake: this.stakes.getStake(address),
+      });
+    });
+
+    return obj;
+  }
+  /**
+   *
+   * @returns The hash of the last block in the chain
+   */
   getHashOfLastBlock() {
     return this.chain[this.chain.length - 1].lastHash;
   }
   /**
    * Adds a new block to the chian
-   * @param {data to be written in the new block} data
+   * @param data data to be written in the new block
    * @returns the newly created block
    */
-  addBlock(data) {
+  addBlock(data, wallet) {
     const block = Block.createBlock(
       this.chain[this.chain.length - 1],
       data,
-      new Wallet(process.env.SECRET)
-    );
-    this.chain.push(block);
-    logger.info("New block " + block.hash + " created");
-    return block;
-  }
-  /**
-   * Creates a new block on the chain (from transactions)
-   * @param {transaction} transactions
-   * @param {validator} wallet
-   * @returns
-   */
-  createBlock(transactions, wallet) {
-    const block = Block.createBlock(
-      this.chain[this.chain.length - 1],
-      transactions,
       wallet
     );
-    logger.info(
-      "New block " + block.hash + " created by " + wallet.getPublicKey("hex")
-    );
+    this.executeTransactions(block);
+    this.chain.push(block);
+    logger.info("New block " + block.hash.slice(0, 8) + " created");
     return block;
   }
   /**
-   * Checks a block for being valid. Reasons for block to be invalid:
-   * invalid hash
-   * invalid lastHash
-   * invalid validator
-   * invalid signature
-   * @param {block to be checked} block
+   * Checks a block for being valid. Reasons for block to be invalid: hash, lastHash, validator, signature
+   * @param block the block to be verifed
    * @returns True if valid, False otherwise
    */
   isValidBlock(block) {
     const lastBlock = this.chain[this.chain.length - 1];
-    if (
-      block.lastHash === lastBlock.hash &&
-      block.hash === Block.blockHash(block) &&
-      Block.verifyBlock(block) &&
-      Block.verifyValidator(block, this.getValidator())
-    ) {
-      logger.debug("Block" + block.hash.slice(-4) + " is valid");
-      this.addBlock(block);
-      this.executeTransactions(block);
-      return true;
+    if (block.lastHash === lastBlock.hash) {
+      if (block.hash === Block.blockHash(block)) {
+        if (Block.verifyBlock(block)) {
+          if (this.validators.isValidator(block.validator)) {
+            logger.debug("Block: " + block.hash.slice(0, 8) + " is valid");
+            this.chain.push(block);
+            this.executeTransactions(block);
+            return true;
+          } else {
+            logger.debug("Block validator is invalid");
+            return false;
+          }
+        } else {
+          logger.debug("Block signature is invalid");
+          return false;
+        }
+      } else {
+        logger.debug("Block hash is invalid");
+        return false;
+      }
     } else {
+      logger.debug("Block lastHash is invalid");
       return false;
     }
   }
   /**
    * Validate given chain
-   * @param {chian object} chain
+   * @param chain object
    * @returns Flase if any of the nodes hashes are invalid (including genesis), True otherwise
    */
   isValidChain(chain) {
@@ -107,7 +122,7 @@ class Blockchain {
   }
   /**
    * Get the balance of the account
-   * @param {Public key of the wallet to retrieve the balance for} publicKey
+   * @param publicKey Public key of the wallet to retrieve the balance for
    * @returns the balance of the account that has the provided public key
    */
   getBalance(publicKey) {
@@ -115,31 +130,31 @@ class Blockchain {
   }
   /**
    * Checks the validity of the received chain and replaces the existing chain with the new one if valid
-   * @param {Array containing the blocks} newChain
+   * @param newChain Array containing the blocks
    * @returns True if chain was replace, Flase if chian was not replaced due to invalid issue
    */
   replaceChain(newChain) {
     if (newChain.length <= this.chain.length) {
       logger.warn(
         "Received chain " +
-          newChain[newChain.length - 1].hash.slice(-5) +
+          newChain[newChain.length - 1].hash.slice(0, 8) +
           " is not longer than the current chain " +
-          this.chain[this.chain.length - 1].hash.slice(-5)
+          this.chain[this.chain.length - 1].hash.slice(0, 8)
       );
       return false;
     } else if (!this.isValidChain(newChain)) {
       logger.warn(
         "Received chain " +
-          newChain[newChain.length - 1].hash.slice(-5) +
+          newChain[newChain.length - 1].hash.slice(0, 8) +
           " is invalid"
       );
       return false;
     }
     logger.debug(
       "Replacing the current chain " +
-        this.chain[this.chain.length - 1].hash.slice(-5) +
+        this.chain[this.chain.length - 1].hash.slice(0, 8) +
         " with new chain " +
-        newChain[newChain.length - 1].hash.slice(-5)
+        newChain[newChain.length - 1].hash.slice(0, 8)
     );
     this.resetState();
     this.executeChain(newChain);
@@ -148,7 +163,7 @@ class Blockchain {
   }
   /**
    * Handler for adding new blocks or rebuild the blockchain locally
-   * @param {block to be executed} block
+   * @param block block to be executed
    */
   executeTransactions(block) {
     block.data.forEach((transaction) => {
@@ -179,13 +194,18 @@ class Blockchain {
       }
     });
   }
-
+  /**
+   * Auxiliary function to execute a cain of transactions
+   * @param chain to be excuted block by block
+   */
   executeChain(chain) {
     chain.forEach((block) => {
       this.executeTransactions(block);
     });
   }
-
+  /**
+   * Auxiliary function to reset the state of the blockchain
+   */
   resetState() {
     this.chain = [Block.genesis()];
     this.stakes = new Stake();

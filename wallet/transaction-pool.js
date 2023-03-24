@@ -30,7 +30,6 @@ class TransactionPool {
    * @returns True if transaction is in the pool, False otherwise
    */
   transactionExists(transaction) {
-    logger.debug(this.transactions.length);
     if (this.transactions.length === 0) {
       return false;
     }
@@ -64,7 +63,6 @@ class TransactionPool {
     this.transactions = [];
   }
   toString() {
-    logger.debug("Transaction pool length: " + this.transactions.length);
     return this.transactions.toString();
   }
 }

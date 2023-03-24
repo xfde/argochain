@@ -13,11 +13,11 @@ class Block {
    * @returns A new genesis block
    */
   static genesis() {
-    return new this(Date.now(), "---", "genesis-hash", []);
+    return new this(Date.now(), "---", "genesis-hash", [], "N/A", { s: "N/A" });
   }
   /**
    * Creates the block hash with the data recevied
-   * @param {block object sotring the data} block
+   * @param block block object sotring the data
    * @returns the hash of the block
    */
   static blockHash(block) {
@@ -27,28 +27,28 @@ class Block {
   }
   /**
    * Cratates a new block using the last hash and new data
-   * @param {last valid block in the chain} lastBlock
-   * @param {The information to be written in the new block} data
-   * @param {The wallet of the signer} wallet
+   * @param lastBlock last valid block in the chain
+   * @param data The information to be written in the new block
+   * @param wallet The wallet of the signer
    * @returns A newly created block based on last hash
    */
-  static createBlock(lastBlock, _data, wallet) {
+  static createBlock(lastBlock, data, wallet) {
     let hash;
     let timestamp = Date.now();
     const lastHash = lastBlock.hash;
     // make data array so you can store more info in a block
-    hash = Block.hash(timestamp, lastHash, _data);
+    hash = Block.hash(timestamp, lastHash, data);
 
-    let validator = wallet.getPublicKey();
+    let validator = wallet.getPublicKey("hex");
 
     //Sign the block
     let signature = Block.signBlockHash(hash, wallet);
-    return new this(timestamp, lastHash, hash, _data, validator, signature);
+    return new this(timestamp, lastHash, hash, data, validator, signature);
   }
   /**
    *
-   * @param {hash of the block} hash
-   * @param {wallet to sign the block} wallet
+   * @param hash hash of the block
+   * @param wallet wallet to sign the block
    * @returns
    */
   static signBlockHash(hash, wallet) {
@@ -56,9 +56,9 @@ class Block {
   }
   /**
    * Utility function for hashing
-   * @param {*} timestamp
-   * @param {*} lastHash
-   * @param {*} data
+   * @param timestamp time of block
+   * @param lastHash has of last block
+   * @param data information stored by block
    * @returns
    */
   static hash(timestamp, lastHash, data) {
@@ -66,7 +66,7 @@ class Block {
   }
   /**
    * Verfies the signature of a block
-   * @param {Block object} block
+   * @param block Block object
    * @returns
    */
   static verifyBlock(block) {
@@ -78,8 +78,8 @@ class Block {
   }
   /**
    * Verify the validator of a block
-   * @param {block object} block
-   * @param {Validator} validator
+   * @param block block object
+   * @param validator Validator
    * @returns true if block validator is the same as the given validator, false otherwise
    */
   static verifyValidator(block, validator) {

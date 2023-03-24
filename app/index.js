@@ -48,6 +48,12 @@ fs.readFile("blockchain.txt", "utf8", function (err, data) {
     logger.debug("Retriving the chain");
     res.json(blockchain.chain);
   });
+  //api to get the blocks
+  app.get(base_path + "/accounts", (req, res) => {
+    logger.debug("Retriving accounts list");
+    let acc = blockchain.getAccountsData();
+    res.json(acc);
+  });
 
   // api to view transaction in the transaction pool
   app.get(base_path + "/transactions", (req, res) => {
@@ -59,7 +65,12 @@ fs.readFile("blockchain.txt", "utf8", function (err, data) {
   app.post(base_path + "/transactions", (req, res) => {
     const { to, amount, type } = req.body;
     logger.debug(
-      "Received transaction: " + type + " for: " + amount + " to address: " + to
+      "Received transaction: " +
+        type +
+        " for: " +
+        amount +
+        " to address: " +
+        to.slice(0, 8)
     );
     const transaction = wallet.createTransaction(
       to,
@@ -72,47 +83,41 @@ fs.readFile("blockchain.txt", "utf8", function (err, data) {
       p2pserver.broadcastTransaction(transaction);
     }
     res.redirect(base_path + "/transactions");
-    logger.debug("Transaction pool: " + transactionPool.toString());
   });
 
   //api to add a block
   app.post(base_path + "/dev/createBlock", (req, res) => {
-    const block = blockchain.addBlock(req.body.data);
-    logger.debug(`New block added: ${block.toString()}`);
+    const block = blockchain.addBlock(req.body.data, wallet);
+    logger.debug(`New block added: ${block.toString().slice(0, 8)}`);
     p2pserver.syncChain();
     res.redirect("/blocks");
   });
-
+  // DEV API TO APPOINT VALIDATOR
   app.post(base_path + "/dev/appointValidator", (req, res) => {
-    blockchain.validators.appointValidator(wallet.getPublicKey("hex"));
-    logger.debug(
-      `Wallet ` + wallet.getPublicKey("hex") + " added as validator"
-    );
+    const pkey = wallet.getPublicKey("hex");
+    blockchain.validators.appointValidator(pkey);
+    p2pserver.broadcastValidator(pkey);
+    logger.debug(`Wallet ` + pkey.slice(0, 8) + " added as validator");
     res.json({ response: "You enlisted as a validator successfully!" });
   });
-
+  // DEV API TO CREDIT WALLET
   app.post(base_path + "/dev/addBalance", (req, res) => {
-    blockchain.accounts.transfer(
-      "0",
-      wallet.getPublicKey("hex"),
-      req.body.amount
-    );
+    const pkey = wallet.getPublicKey("hex");
+    blockchain.accounts.transfer("0", pkey, req.body.amount);
     logger.debug(
-      `Wallet ` +
-        wallet.getPublicKey("hex") +
-        " credited with balance " +
-        req.body.amount
+      `Wallet ` + pkey.slice(0, 8) + " credited with balance " + req.body.amount
     );
     res.json({ response: "Balance added sucessfully on the blockchain!" });
   });
+
   // api to see the current wallet
   app.get(base_path + "/wallet", (req, res) => {
+    const pkey = wallet.getPublicKey("hex");
     logger.debug("Get wallet details");
     res.json({
       localBalance: wallet.getPublicBalance(),
-      blockchainBalance: blockchain.getBalance(wallet.getPublicKey("hex")),
-      publicKey: wallet.getPublicKey("hex"),
-      privateKey: wallet.getPrivateKey(),
+      blockchainBalance: blockchain.getBalance(pkey),
+      publicKey: pkey,
     });
   });
   // app server configurations

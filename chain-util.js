@@ -13,7 +13,7 @@ class ChainUtil {
     return SHA256(JSON.stringify(data)).toString();
   }
   static verifySignature(publicKey, signature, dataHash) {
-    return ec.keyFromPublic(publicKey).verify(dataHash, signature);
+    return ec.keyFromPublic(publicKey, "hex").verify(dataHash, signature);
   }
   static getKeyPairFromObject(publicKey) {
     let key = ec.keyFromPublic(publicKey, "hex");

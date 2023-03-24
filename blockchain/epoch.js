@@ -17,18 +17,18 @@ class Epoch extends EventEmitter {
   async updateCurrentTime() {
     let t = (await this.ts.getTime()).now.getTime();
     this.time = t;
-    logger.debug("Time is: " + new Date(t));
     return t;
   }
 
   syncEpoch(data) {
-    this.epoch = data.epoch;
-    this.lastEpochTime = data.lastEpochTime;
-    this.time = data.time;
-    logger.debug("Synced epochs");
-    logger.debug(
-      "\nCurrent epoch:" + this.epoch + "\nCurrent time: " + new Date(this.time)
-    );
+    if (data.epoch > this.epoch) {
+      this.epoch = data.epoch;
+      this.lastEpochTime = data.lastEpochTime;
+      this.time = data.time;
+      logger.info("Synced epochs");
+    } else {
+      logger.debug("Received epoch is behind schedule...rejecting");
+    }
   }
   _addSeconds(date, seconds) {
     return new Date(date.getTime() + seconds * 1000);

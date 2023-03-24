@@ -1,3 +1,5 @@
+const logger = require("../logger");
+
 class Account {
   constructor(data) {
     if (data) {
@@ -10,7 +12,7 @@ class Account {
   }
   /**
    * Initises an adress
-   * @param {Address to be initilaised in the chain} address
+   * @param address Address to be initilaised in the chain
    */
   initialize(address) {
     if (this.balance[address] == undefined) {
@@ -20,9 +22,9 @@ class Account {
   }
   /**
    * Intialises the wallets and trasfers the amount
-   * @param {Sender Wallet} from
-   * @param {Receiver Wallet} to
-   * @param {Amount to be transfered} amount
+   * @param from Sender Wallet
+   * @param to Receiver Wallet
+   * @param amount Amount to be transfered
    */
   transfer(from, to, amount) {
     this.initialize(from);
@@ -32,23 +34,23 @@ class Account {
   }
   /**
    *
-   * @param {Target wallet} to
-   * @param {Ammount to be incremented} amount
+   * @param to Target wallet
+   * @param amount Ammount to be incremented
    */
   increment(to, amount) {
     this.balance[to] += amount;
   }
   /**
    *
-   * @param {Target wallet} from
-   * @param {Ammount to be decremented} amount
+   * @param from Target wallet
+   * @param amount Ammount to be decremented
    */
   decrement(from, amount) {
     this.balance[from] -= amount;
   }
   /**
    *
-   * @param {Target wallet} address
+   * @param address Target wallet
    * @returns The balance of the given wallet
    */
   getBalance(address) {
@@ -57,7 +59,7 @@ class Account {
   }
   /**
    * Creates a transfer from the given transaction
-   * @param {Transaction object} transaction
+   * @param transaction Transaction object
    */
   update(transaction) {
     let amount = transaction.output.amount;
@@ -67,8 +69,8 @@ class Account {
   }
   /**
    * Trasnfers the fee on the block to the validator
-   * @param {block to written} block
-   * @param {} transaction
+   * @param block block to written
+   * @param transaction Transaction object
    */
   transferFee(block, transaction) {
     let amount = transaction.output.fee;

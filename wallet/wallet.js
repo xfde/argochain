@@ -2,24 +2,22 @@ const ChainUtil = require("../chain-util");
 const logger = require("../logger");
 const Transaction = require("./transaction");
 class Wallet {
-  constructor(data) {
-    if (data.wallet !== undefined) {
-      this.balance = data.walletBalance;
-      this.keyPair = ChainUtil.getKeyPairFromObject(data.wallet);
+  constructor(data, scope) {
+    if (scope === "SIGN") {
+      this.keyPair = ChainUtil.getKeyPairFromObject(data);
     } else {
-      this.balance = 0;
       this.keyPair = ChainUtil.genKeyPair(data);
     }
     this.publicKey = this.keyPair.getPublic();
-    this.privateKey = this.keyPair.getPrivate();
+    this.balance;
   }
   /**
    * Sign using the wallets keyPair
-   * @param {} dataHash
+   * @param blockHash hash of block to sign
    * @returns A HEX signature
    */
-  sign(dataHash) {
-    return this.keyPair.sign(dataHash);
+  sign(blockHash) {
+    return this.keyPair.sign(blockHash);
   }
   /**
    * Initialise a transaction from the current wallet
@@ -71,7 +69,7 @@ class Wallet {
     return this.keyPair.getPublic(arg);
   }
   getPrivateKey() {
-    return this.privateKey;
+    return this.keyPair.getPrivate("hex");
   }
   /**
    *
