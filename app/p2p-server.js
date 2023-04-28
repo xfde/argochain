@@ -13,6 +13,7 @@ const MESSAGE_TYPE = {
   block: "BLOCK",
   clear_transactions: "CLEAR_TRANSACTIONS",
   validator: "ADD_VALIDATOR",
+  sync: "SYNC",
 };
 
 class P2pserver {
@@ -21,34 +22,36 @@ class P2pserver {
     this.sockets = [];
     this.transactionPool = transactionPool;
     this.wallet = wallet;
+    this.epoch_count = 0;
   }
 
   listen() {
-    // create the p2p server with port as argument
-    const server = new WebSocket.Server({ port: P2P_PORT });
-    // register callback for new connections to this node
-    // on any new connection the current instance will send the current chain
-    // to the newly connected peer
-    server.on("connection", (socket) => {
-      // register the connected socket as active
-      socket.isAlive = true;
-      this.connectSocket(socket);
-    });
-    this.epochHandler();
-    this.registerWallet(this.wallet.getPublicKey("hex"));
-    // to connect to the peers that we have specified
-    this.connectToPeers();
-    logger.debug(`Listening for peer to peer connection on port : ${P2P_PORT}`);
+    // create the p2p server with port as argument'
+    this.blockchain.epoch.updateCurrentTime().then(() => {
+      const server = new WebSocket.Server({ port: P2P_PORT });
+      this.blockchain.epoch._nextEpoch();
+      // register callback for new connections to this node
+      // on any new connection the current instance will send the current chain
+      // to the newly connected peer
+      server.on("connection", (socket) => {
+        // register the connected socket as active
+        socket.isAlive = true;
+        this.connectSocket(socket);
+      });
+      this.epochHandler();
+      this.registerWallet(this.wallet.getPublicKey("hex"));
+      // to connect to the peers that we have specified
+      this.connectToPeers();
+      logger.debug(`Listening for peer to peer connection on port : ${P2P_PORT}`);
+    }
+    );
+    // after a socket connects to this node
   }
-
-  // after a socket connects to this node
   connectSocket(socket) {
     this.sockets.push(socket);
     this.messageHandler(socket);
     this.closeConnectionHandler(socket);
-    this.blockchain.epoch.updateCurrentTime().then(() => {
-      this.sendChain(socket);
-    });
+    this.sendChain(socket);
   }
   /**
    * @param {socket to be disconnected} socket
@@ -80,7 +83,9 @@ class P2pserver {
     peers.forEach((peer) => {
       const socket = new WebSocket(peer);
       // open event listner is emitted when a connection is established
-      socket.on("open", () => this.connectSocket(socket));
+      socket.on("open", () => {    this.sockets.push(socket);
+        this.messageHandler(socket);
+        this.closeConnectionHandler(socket);});
     });
   }
 
@@ -118,7 +123,7 @@ class P2pserver {
       JSON.stringify({
         type: MESSAGE_TYPE.chain,
         chain: this.blockchain.chain,
-        epoch: this.blockchain.getCurrentEpoch(),
+        epoch: this.blockchain.getCurrentEpoch()+1,
         lastEpochTime: this.blockchain.epoch.lastEpochTime,
         time: this.blockchain.epoch.time,
         wallet: this.wallet.getPublicKey("hex"),
@@ -163,6 +168,19 @@ class P2pserver {
   registerWallet(wallet) {
     this.blockchain.accounts.initialize(wallet);
   }
+  broadcastSync(){
+    this.sockets.forEach((socket) => {
+      socket.send(
+        JSON.stringify({
+          type: MESSAGE_TYPE.sync,
+          chain: this.blockchain.chain,
+          epoch: this.blockchain.getCurrentEpoch(),
+          lastEpochTime: this.blockchain.epoch.lastEpochTime,
+          time: this.blockchain.epoch.time,
+        })
+      );
+    });
+  }
   epochHandler() {
     this.blockchain.epoch.on("newEpoch", (epoch) => {
       logger.info(
@@ -171,6 +189,11 @@ class P2pserver {
           " ended, transactions in pool: " +
           this.transactionPool.transactions.length
       );
+      this.epoch_count +=1;
+      if(this.epoch_count === 10){
+        this.broadcastSync();
+        this.epoch_count = 0;
+      }
       // compute vrf proof
       if (
         !this.blockchain.validators.isValidator(this.wallet.getPublicKey("hex"))
@@ -183,7 +206,7 @@ class P2pserver {
       const [hash, proof] = Evaluate(this.wallet.getPrivateKey(), data);
       let hex = Buffer.from(hash).toString("hex");
       let curr_raffle = parseInt(hex, 16) / Math.pow(2, 256);
-      if (curr_raffle < this.blockchain.validators.getValidatorThreshold()) {
+      // if (curr_raffle < this.blockchain.validators.getValidatorThreshold()) {
         // WINNER WINNER CHICKEN DINNER
         let end = this.transactionPool.transactions.length;
         if (!this.transactionPool.isEmpty()) {
@@ -208,7 +231,7 @@ class P2pserver {
             end +
             " transactions added by this wallet"
         );
-      }
+      // }
     });
   }
   messageHandler(socket) {
@@ -220,6 +243,10 @@ class P2pserver {
         case MESSAGE_TYPE.chain:
           this.blockchain.replaceChain(data.chain);
           this.registerWallet(data.wallet);
+          this.blockchain.epoch.syncEpoch(data);
+          break;
+        case MESSAGE_TYPE.sync:
+          // this.blockchain.replaceChain(data.chain);
           this.blockchain.epoch.syncEpoch(data);
           break;
         case MESSAGE_TYPE.transaction:
@@ -238,8 +265,9 @@ class P2pserver {
           // validation code NEEDS MOVING
           try {
             let blockMetaData = ChainUtil.hash(
-              `${this.blockchain.getHashOfLastBlock()}${this.blockchain.getCurrentEpoch()}`
+              `${this.blockchain.getHashOfLastBlock()}${this.blockchain.getCurrentEpoch()+1}`
             );
+            logger.debug(this.blockchain.getCurrentEpoch());
             let publicKey = ChainUtil.getKeyPairFromObject(
               data.block.validator
             );
@@ -250,6 +278,7 @@ class P2pserver {
             );
           } catch (err) {
             logger.debug("Invalid proof, rejecting block");
+            break;
           }
           if (this.blockchain.isValidBlock(data.block)) {
             // First validate the block with the VRF the add the block

@@ -134,7 +134,7 @@ class Blockchain {
    * @returns True if chain was replace, Flase if chian was not replaced due to invalid issue
    */
   replaceChain(newChain) {
-    if (newChain.length <= this.chain.length) {
+    if (newChain.length == this.chain.length) {
       logger.warn(
         "Received chain " +
           newChain[newChain.length - 1].hash.slice(0, 8) +

@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { useGetBlocksQuery } from "../../features/apiSlice";
-import { Canvas, Node, Edge, MarkerArrow } from "reaflow";
+import { Canvas, Node } from "reaflow";
 import ErrorPage from "../error/error";
 import "./explorer.scss";
 import FloatingModal from "../floatingModal/floatingModal";
 import DetailsO from "../DetailsO/DetailsO";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
-const OFFSET = -800;
+const OFFSET = -400;
 function Explorer() {
   const { data, error, isLoading } = useGetBlocksQuery();
   const [activeBlock, setActiveBlock] = useState({
@@ -56,22 +55,13 @@ function Explorer() {
   });
   return (
     <div className="boxin">
-      <TransformWrapper
-        options={{
-          maxScale: 4,
-          disablePadding: true,
-          limitToBounds: true,
-        }}
-      >
-        <TransformComponent>
           <FloatingModal />
           <Canvas
             className="canvas"
             minZoom={0.001}
             maxZoom={3}
-            zoomable={false}
-            pannable={true}
-            maxHeight={800}
+            zoomable={true}
+            pannable={false}
             nodes={nodes}
             edges={[]}
             node={
@@ -122,8 +112,6 @@ function Explorer() {
               </Node>
             }
           />
-        </TransformComponent>
-      </TransformWrapper>
       <div className="modal-wrapper" id="modal">
         <div className="modal-body card">
           <div className="modal-header">

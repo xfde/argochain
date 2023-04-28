@@ -6,10 +6,10 @@ class Epoch extends EventEmitter {
   constructor(data) {
     super();
     this.epoch = data != undefined ? data.epoch : 0;
-    this.lastEpochTime = 0;
-    this.time = undefined;
+    this.lastEpochTime = 0; // last time we called _nextEpoch
+    this.time = undefined; // start time or start time of last epoch
     this.ts = NtpTimeSync.getInstance();
-    this.interval = setInterval(this._nextEpoch.bind(this), EPOCH_TIME_IN_MS);
+    this.interval = undefined;
   }
   getEpoch() {
     return this.epoch;
@@ -21,14 +21,14 @@ class Epoch extends EventEmitter {
   }
 
   syncEpoch(data) {
-    if (data.epoch > this.epoch) {
+    let curr_time = new Date();
+    if (this.lastEpochTime - data.lastEpochTime < 0){
       this.epoch = data.epoch;
       this.lastEpochTime = data.lastEpochTime;
-      this.time = data.time;
-      logger.info("Synced epochs");
-    } else {
-      logger.debug("Received epoch is behind schedule...rejecting");
+      this.interval = clearInterval(this.interval);
+      setTimeout(this._nextEpoch.bind(this), EPOCH_TIME_IN_MS-(curr_time-data.lastEpochTime))
     }
+    logger.info("Synced epochs");
   }
   _addSeconds(date, seconds) {
     return new Date(date.getTime() + seconds * 1000);
@@ -38,6 +38,9 @@ class Epoch extends EventEmitter {
     this.lastEpochTime = this.time;
     this.time += EPOCH_TIME_IN_MS;
     // start lottery to elect validator for current epoch
+    if (this.interval === undefined){
+      this.interval = setInterval(this._nextEpoch.bind(this), EPOCH_TIME_IN_MS);
+    }
     this.emit("newEpoch", this.epoch);
   }
 }
